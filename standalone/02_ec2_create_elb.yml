@@ -1,0 +1,45 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 02.1 -- Create EC2 Elastic Load Balancer in {{ aws_env|upper }}
+    ec2_elb_lb:
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-elb-{{ aws_env_int }}"
+      idle_timeout: 600
+      health_check:
+          ping_protocol: tcp
+          ping_port: 22
+          response_timeout: 5
+          interval: 30
+          unhealthy_threshold: 2
+          healthy_threshold: 10
+      listeners:
+        - protocol: http
+          load_balancer_port: 80
+          instance_port: 8080
+        - protocol: tcp
+          load_balancer_port: 50000
+          instance_port: 50000
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      security_group_ids: "{{ ec2_sg_details.group_id }}"
+      scheme: "{{ aws_environment }}"
+      state: present
+      subnets:
+        - "{{ aws_subnet_id1_int }}"
+        - "{{ aws_subnet_id2_int }}"
+        - "{{ aws_subnet_id3_int }}"
+      tags:
+        Name: "{{ aws_project }}-{{ aws_application }}-ec2-elb-{{ aws_env_int }}"
+        BUSINESS_UNIT: "{{ tagBusinessUnit }}"
+        BUSINESS_REGION: "{{ tagBusinessRegion }}"
+        CLIENT: "{{ tagClient }}"
+        PLATFORM: "{{ tagPlatform }}"
+    register: ec2_elb_details
+    ignore_errors: yes
+  - debug: msg="{{ ec2_elb_details }}"
+
+  - pause:
+      seconds: 15

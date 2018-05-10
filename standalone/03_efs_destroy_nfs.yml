@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 03.1 -- Destroy EFS network file share in {{ aws_env|upper }}
+    efs:
+      name: "{{ aws_project }}-{{ aws_application }}-efs-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+    register: efs_nfs_details
+  - debug: msg="{{ efs_nfs_details }}"
+
+  - name: Destroy EFS Security Group in {{ aws_env|upper }}
+    ec2_group:
+      name: "{{ aws_project }}-{{ aws_application }}-efs-sg-{{ aws_env_int }}"
+      description: ec2 security group
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+    register: efs_sg_details
+  - debug: msg="{{ efs_sg_details.group_id }}"
+
+  - pause:
+      seconds: 15

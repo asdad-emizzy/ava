@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 11.1 -- Lookup ARN of ECS Task Definition in {{ aws_env|upper }}
+    shell: aws ecs describe-task-definition \
+           --task-definition "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    register: ecs_td_details
+  - set_fact:
+      ecs_td_details: "{{ ecs_td_details.stdout|from_json() }}"
+  - debug: msg="{{ ecs_td_details.taskDefinition.revision }}"
+
+  - name: 11.2 -- Create ECS Service {{ aws_env|upper }}
+    ecs_service:
+      cluster: "{{ aws_project }}-{{ aws_application }}-ecs-cluster-{{ aws_env_int }}"
+      delay: 10
+      desired_count: 1
+      name: "{{ aws_project }}-{{ aws_application }}-ecs-svc-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      repeat: 10
+      state: present
+      task_definition: "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}:{{ ecs_td_details.taskDefinition.revision }}"

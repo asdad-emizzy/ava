@@ -1,0 +1,122 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  #=================== EC2 / IAM Role ====================
+  - name: 04.1 -- Create IAM EC2 Role in {{ aws_env|upper }}
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: present
+
+  - pause:
+      seconds: 15
+
+  - name: 04.2 -- Attach IAM EC2 Policy, AmazonEC2FullAccess, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ec2_role }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.3 -- Attach IAM EC2 Policy, AmazonEC2ContainerServiceFullAccess, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ec2_role2 }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.4 -- Attach IAM ECR Policy, AmazonEC2ContainerRegistryFullAccess, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ecs_role2 }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  #=================== EC2 / IAM Instance Profile ====================
+  - name: 04.5 -- Create IAM EC2 Instance Profile in {{ aws_env|upper }}
+    shell: aws iam create-instance-profile \
+           --instance-profile-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 04.6 -- Attach IAM EC2 Instance Profile in {{ aws_env|upper }}
+    shell: aws iam add-role-to-instance-profile \
+           --instance-profile-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}"
+    ignore_errors: yes
+
+  #=================== ECS/ Assume-Role Policy ====================
+  - name: 04.7 -- Create JSON Cross-Account Template in {{ aws_env|upper }}
+    template:
+      dest: "../../env_vars/dev/cross-account-{{ aws_env }}.json"
+      src: "../../env_template/cross-account.json"
+      mode: 0644
+
+  - name: 04.8 -- Create IAM Assume-Role Policy in {{ aws_env|upper }}
+    shell: aws iam create-policy \
+           --policy-document "file://../../env_vars/dev/cross-account-{{ aws_env }}.json" \
+           --policy-name "{{ aws_project }}-{{ aws_application }}-iam-assumerolepolicy-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+
+    ignore_errors: yes
+
+  #=================== ECS / IAM Task Role (POC ) ===============
+  - name: 04.9 -- Create IAM ECS Task Role in {{ aws_env|upper }}
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: present
+      trust_policy:
+        Version: '2012-10-17'
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+
+  - pause:
+      seconds: 15
+
+  - name: 04.10 -- Attach IAM ECS Policy, AmazonEC2ContainerServiceforEC2Role, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/service-role/"{{ aws_ecs_role }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.11 -- Attach IAM ECR Policy, AmazonEC2ContainerRegistryFullAccess, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ecs_role2 }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.12 -- Attach ECS IAM Policy, {{ aws_project }}-{{ aws_application }}-iam-assumerolepolicy-{{ aws_env_int }}, in {{ aws_env|upper }}
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::"{{ aws_account_dev }}:policy/{{ aws_project }}-{{ aws_application }}-iam-assumerolepolicy-{{ aws_env_int }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

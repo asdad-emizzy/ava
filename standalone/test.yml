@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: Lookup EC2 Security Group
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}"
+      profile: "{{ aws_profile2 }}"
+      region: "{{ aws_region }}"
+      state: present
+      trust_policy:
+        Version: '2012-10-17'
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            AWS: arn:aws:iam::091036132616:root

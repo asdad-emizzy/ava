@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 01.1 -- Destroy EC2 Security Group in {{ aws_env|upper }}
+    ec2_group:
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-sg-{{ aws_env_int }}"
+      description: "{{ aws_project }}-{{ aws_application }}-ec2-sg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+      vpc_id: "{{ aws_vpc }}"
+    register: ec2_sg_details
+  - debug: msg="{{ ec2_sg_details }}"
+
+  - pause:
+      seconds: 20

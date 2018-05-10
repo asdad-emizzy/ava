@@ -1,0 +1,68 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 06.1 -- Lookup current Amazon ECS-Optimized Amazon Linux AMI in {{ aws_env|upper }}
+    ec2_ami_find:
+      name: "{{ aws_ecs_image }}"
+      owner: "{{ aws_owner }}"
+      region: "{{ aws_region }}"
+      sort: "{{ aws_sort }}"
+      sort_order: "{{ aws_sort_order }}"
+      sort_end: "{{ aws_sort_end }}"
+      profile: "{{ aws_profile }}"
+    register: current_ecs_image
+  - debug: msg="{{ current_ecs_image.results[0].ami_id }}"
+
+  - name: 06.2 -- Lookup EC2 Security Group in {{ aws_env|upper }}
+    ec2_group_facts:
+      filters:
+        group_name: "{{ aws_project }}-{{aws_application}}-ec2-sg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+    register: security_group_details
+  - debug: msg="{{ security_group_details.security_groups[0].group_id }}"
+
+  - name: 06.3 -- Create EC2 Launch Configuration in {{ aws_env|upper }}
+    ec2_lc:
+      name: "{{ aws_project }}-{{aws_application}}-ec2-lc-{{ aws_env_int }}"
+      image_id: "{{ current_ecs_image.results[0].ami_id }}"
+      instance_type: "{{ aws_ecs_instance_type }}"
+      instance_profile_name: "{{ aws_project }}-{{aws_application}}-iam-ec2role-{{ aws_env_int }}"
+      key_name: "{{ aws_key_pair }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      security_groups: "{{ security_group_details.security_groups[0].group_id }}"
+      spot_price: "{{ aws_spot_price }}"
+      state: present
+      user_data: |
+        #!/bin/bash
+        set -x
+        echo ------ update OS ------
+        sudo yum update -y
+        echo ------ set ECS cluster ------
+        echo ECS_CLUSTER={{ aws_project }}-{{ aws_application }}-ecs-cluster-{{ aws_env_int }} >> /etc/ecs/ecs.config
+        echo ------ update ECS agent ------
+        sudo yum update -y ecs-init
+        echo ------ install git ------
+        sudo yum install git -y
+        echo ------ install Inspector agent ------
+        wget https://d1wk0tztpsntt1.cloudfront.net/linux/latest/install
+        sudo bash install
+        echo ------ mount EFS ------
+        sudo mkdir -p /var/jenkins
+        sudo yum install nfs-utils -y
+        sudo mount -t nfs4 {{ efs_nfs_details.efs.file_system_id }}.efs.{{ aws_region }}.amazonaws.com:/ /var/jenkins
+        lsblk
+        df -hT
+        cd /var/jenkins
+        pwd
+        sudo mkdir master
+        sudo mkdir slave
+        sudo chown -R 1000:1000 master
+        sudo chown -R 1000:1000 slave
+
+  - pause:
+      seconds: 15

@@ -1,0 +1,37 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 08.1 -- Create ECS Slave Image Repository in {{ aws_env|upper }}
+    ecs_ecr:
+      name: "{{ aws_project }}-slaveimage"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: present
+    register: slaveimage_details
+  - debug: msg="{{ slaveimage_details.repository.repositoryUri }}"
+
+  - name: 08.2 -- Log In to ECS Slave Image Repo in {{ aws_env|upper }}
+    shell: aws ecr get-login --no-include-email --region "{{ aws_region }}" --profile "{{ aws_profile }}" | sh
+    register: slaveimage_login_details
+  - debug: msg="{{ slaveimage_login_details }}"
+
+  - name: 08.3 - Build Docker Slave Image in {{ aws_env|upper }}. This can take about 30 minutes to complete
+    shell: cd ../../dockerfiles/slave && sudo docker build -t "{{ aws_project }}"-slaveimage/cloudbees:latest .
+    register: build_slaveimage_details
+  - debug: msg="{{ build_slaveimage_details }}"
+
+  - name: 08.4 -- Tag ECS Slave Image in {{ aws_env|upper }}
+    shell: cd ../../dockerfiles/slave && docker tag "{{ aws_project }}"-slaveimage/cloudbees:latest "{{ slaveimage_details.repository.repositoryUri }}":latest
+    register: tag_slaveimage_details
+  - debug: msg="{{ tag_slaveimage_details }}"
+
+  - name: 08.5 -- Push ECS Slave Image in {{ aws_env|upper }}. This can take about 15 minutes to complete
+    shell: docker push "{{ slaveimage_details.repository.repositoryUri }}"
+    register: push_slaveimage_details
+  - debug: msg="{{ push_slaveimage_details }}"
+
+  - pause:
+      seconds: 15

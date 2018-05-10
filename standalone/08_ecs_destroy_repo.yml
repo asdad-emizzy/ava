@@ -1,0 +1,23 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 08.1 -- Delete ECS Slave Images in {{ aws_env|upper }}
+    shell: aws ecr batch-delete-image \
+           --image-ids imageTag=latest \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}" \
+           --repository-name "{{ aws_project }}-slaveimage"
+    ignore_errors: yes
+
+  - name: 08.2 -- Destroy ECS Slave Image Repository in {{ aws_env|upper }}
+    shell: aws ecr delete-repository \
+           --profile "{{ aws_profile }}"
+           --repository-name "{{ aws_project }}-slaveimage" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

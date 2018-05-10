@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  # ELB name must not be more than 32 characters
+  - name: 02.1 -- Destroy EC2 Elastic Load Balancer in {{ aws_env|upper }}
+    ec2_elb_lb:
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-elb-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      scheme: "{{ aws_environment }}"
+      state: absent
+      wait: yes
+      wait_timeout: 180
+    register: ec2_elb_details
+    ignore_errors: yes
+  - debug: msg="{{ ec2_elb_details }}"
+
+  - pause:
+      seconds: 15

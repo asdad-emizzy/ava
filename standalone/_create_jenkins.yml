@@ -1,0 +1,11 @@
+- include: 01_ec2_create_sg.yml
+- include: 02_ec2_create_elb.yml
+- include: 03_efs_create_nfs.yml
+- include: 04_iam_create_role.yml
+- include: 05_iam_create_crossacct.yml
+- include: 06_ec2_create_lc.yml
+- include: 07_ec2_create_asg.yml
+- include: 08_ecs_create_repo.yml
+- include: 09_ecs_create_cluster.yml
+- include: 10_ecs_create_td.yml
+- include: 11_ecs_create_svc.yml

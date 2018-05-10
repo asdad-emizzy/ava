@@ -1,0 +1,15 @@
+MASTER environment:
+
+  Key Pair (for initial builds only)
+  ---------
+  Name:             consoleone-dev
+
+
+SLAVE environment:
+
+
+JENKINS:
+
+  1. Create host A record in Route 53
+  2. Create CName record to Route 53 (on-premises)
+  3. Update Jenkins URL 

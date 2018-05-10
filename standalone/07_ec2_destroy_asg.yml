@@ -1,0 +1,61 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 07.1 -- Scale In EC2 Auto Scaling Group in {{ aws_env|upper }}
+    ec2_asg:
+      default_cooldown: "{{ aws_default_cooldown }}"
+      desired_capacity: 0
+      health_check_period: "{{ aws_health_check_period }}"
+      health_check_type: "{{ aws_health_check_type }}"
+      launch_config_name: "{{ aws_project }}-{{aws_application}}-ec2-lc-{{ aws_env_int }}"
+      load_balancers: [ "{{ aws_project }}-{{ aws_application }}-ec2-elb-{{ aws_env_int }}" ]
+      max_size: 0
+      min_size: 0
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-asg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: present
+      tags:
+        - NAME: "{{ aws_project }}-{{aws_application}}-ec2-lc-{{ aws_env_int }}"
+        - CLIENT: "{{ tagClient }}"
+        - PLATFORM: "{{ tagPlatform }}"
+        - BUSINESS_UNIT: "{{ tagBusinessUnit }}"
+        - BUSINESS_REGION: "{{ tagBusinessRegion }}"
+        - SCHEDULER:SLEEP: "{{ tagSchedulerSleep }}"
+          propagate_at_launch: yes
+      vpc_zone_identifier: "[ '{{ aws_subnet_id1_int }}', '{{ aws_subnet_id2_int }}', '{{ aws_subnet_id3_int }}' ]"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 60
+
+  - name: 07 -- Destroy EC2 Auto Scaling Group in {{ aws_env|upper }}
+    ec2_asg:
+      default_cooldown: "{{ aws_default_cooldown }}"
+      desired_capacity: 0
+      health_check_period: "{{ aws_health_check_period }}"
+      health_check_type: "{{ aws_health_check_type }}"
+      launch_config_name: "{{ aws_project }}-{{aws_application}}-ec2-lc-{{ aws_env_int }}"
+      load_balancers: [ "{{ aws_project }}-{{ aws_application }}-ec2-elb-{{ aws_env_int }}" ]
+      max_size: 0
+      min_size: 0
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-asg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+      tags:
+        - NAME: "{{ aws_project }}-{{aws_application}}-ec2-lc-{{ aws_env_int }}"
+        - CLIENT: "{{ tagClient }}"
+        - PLATFORM: "{{ tagPlatform }}"
+        - BUSINESS_UNIT: "{{ tagBusinessUnit }}"
+        - BUSINESS_REGION: "{{ tagBusinessRegion }}"
+        - SCHEDULER:SLEEP: "{{ tagSchedulerSleep }}"
+          propagate_at_launch: yes
+      vpc_zone_identifier: "[ '{{ aws_subnet_id1_int }}', '{{ aws_subnet_id2_int }}', '{{ aws_subnet_id3_int }}' ]"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

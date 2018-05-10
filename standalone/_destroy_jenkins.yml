@@ -1,0 +1,11 @@
+- include: 11_ecs_destroy_svc.yml
+- include: 10_ecs_destroy_td.yml
+- include: 07_ec2_destroy_asg.yml
+- include: 09_ecs_destroy_cluster.yml
+- include: 08_ecs_destroy_repo.yml
+- include: 06_ec2_destroy_lc.yml
+- include: 05_iam_destroy_crossacct.yml
+- include: 04_iam_destroy_role.yml
+- include: 03_efs_destroy_nfs.yml
+- include: 02_ec2_destroy_elb.yml
+- include: 01_ec2_destroy_sg.yml

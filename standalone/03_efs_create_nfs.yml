@@ -1,0 +1,47 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 03.1 -- Create EFS Security Group in {{ aws_env|upper }}
+    ec2_group:
+      name: "{{ aws_project }}-{{ aws_application }}-efs-sg-{{ aws_env_int }}"
+      description: "{{ aws_project }}-{{ aws_application }}-efs-sg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      rules:
+        - proto: all
+          from_port: all
+          to_port: all
+          cidr_ip: "{{ aws_cidrblock_nva }}"
+      state: present
+      vpc_id: "{{ aws_vpc }}"
+    register: efs_sg_details
+  - debug: msg="{{ efs_sg_details.group_id }}"
+
+  - name: Create EFS network file share in {{ aws_env|upper }}
+    efs:
+      name: "{{ aws_project }}-{{ aws_application }}-efs-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: present
+      tags:
+        Name: "{{ aws_project }}-{{ aws_application }}-efs-{{ aws_env_int }}"
+        BUSINESS_UNIT: "{{ tagBusinessUnit }}"
+        BUSINESS_REGION: "{{ tagBusinessRegion }}"
+        CLIENT: "{{ tagClient }}"
+        PLATFORM: "{{ tagPlatform }}"
+      targets:
+        - subnet_id: "{{ aws_subnet_id1_int }}"
+          security_groups: [ "{{ efs_sg_details.group_id }}" ]
+        - subnet_id: "{{ aws_subnet_id2_int }}"
+          security_groups: [ "{{ efs_sg_details.group_id }}" ]
+        - subnet_id: "{{ aws_subnet_id3_int }}"
+          security_groups: [ "{{ efs_sg_details.group_id }}" ]
+      wait: yes
+    register: efs_nfs_details
+  - debug: msg="{{ efs_nfs_details.efs.file_system_id }}"
+
+  - pause:
+      seconds: 15

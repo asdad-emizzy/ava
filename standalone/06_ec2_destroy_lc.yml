@@ -1,0 +1,16 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 06.1 -- Remove existing EC2 Launch Configuration in {{ aws_env|upper }}
+    shell: aws autoscaling delete-launch-configuration \
+           --launch-configuration-name "{{ aws_project }}-{{ aws_application }}-ec2-lc-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    register: remove_lc_result
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

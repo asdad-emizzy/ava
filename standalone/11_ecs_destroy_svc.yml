@@ -1,0 +1,43 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 11.1 -- Lookup ARN of ECS Task Definition in {{ aws_env|upper }}
+    shell: aws ecs describe-task-definition \
+           --task-definition "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    register: ecs_td_details
+    ignore_errors: yes
+  - set_fact:
+      ecs_td_details: "{{ ecs_td_details.stdout|from_json() }}"
+    ignore_errors: yes
+  - debug: msg="{{ ecs_td_details.taskDefinition.revision }}"
+    ignore_errors: yes
+
+  - name: 11.2 -- Scale Down ECS Service in {{ aws_env|upper }}
+    ecs_service:
+      cluster: "{{ aws_project }}-{{ aws_application }}-ecs-cluster-{{ aws_env_int }}"
+      delay: 10
+      desired_count: 0
+      name: "{{ aws_project }}-{{ aws_application }}-ecs-svc-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      repeat: 10
+      state: present
+      task_definition: "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}:{{ ecs_td_details.taskDefinition.revision }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 30
+
+  - name: 11.3 -- Destroy ECS Service in {{ aws_env|upper }}
+    ecs_service:
+      cluster: "{{ aws_project }}-{{ aws_application }}-ecs-cluster-{{ aws_env_int }}"
+      name: "{{ aws_project }}-{{ aws_application }}-ecs-svc-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+    ignore_errors: yes

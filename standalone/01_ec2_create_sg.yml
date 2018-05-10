@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 01.1 -- Create EC2 Security Group in {{ aws_env|upper }}
+    ec2_group:
+      name: "{{ aws_project }}-{{ aws_application }}-ec2-sg-{{ aws_env_int }}"
+      description: "{{ aws_project }}-{{ aws_application }}-ec2-sg-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: "{{ aws_cidrblock_pdoc }}"
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: "{{ aws_cidrblock_pdoc }}"
+        - proto: tcp
+          from_port: 8080
+          to_port: 8080
+          cidr_ip: 10.40.0.0/16
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: "{{ aws_cidrblock_nva }}"
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: "{{ aws_cidrblock_nva }}"
+        - proto: tcp
+          from_port: 8080
+          to_port: 8080
+          cidr_ip: "{{ aws_cidrblock_nva }}"
+        - proto: tcp
+          from_port: 50000
+          to_port: 50000
+          cidr_ip: "{{ aws_cidrblock_nva }}"
+      state: present
+      vpc_id: "{{ aws_vpc }}"
+    register: ec2_sg_details
+  - debug: msg="{{ ec2_sg_details.group_id }}"
+
+  - pause:
+      seconds: 15

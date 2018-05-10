@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 09.1 -- Destroy ECS Cluster in {{ aws_env|upper }}
+    ecs_cluster:
+      name: "{{ aws_project }}-{{ aws_application }}-ecs-cluster-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+
+  - pause:
+      seconds: 15

@@ -1,0 +1,113 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  #=================== EC2 / Instance Profile ====================
+  - name: 04.1 -- Remove IAM EC2 Instance Profile in {{ aws_env|upper }}
+    shell: aws iam remove-role-from-instance-profile \
+           --instance-profile-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 04.2 -- Destroy IAM EC2 Instance Profile in {{ aws_env|upper }}
+    shell: aws iam delete-instance-profile \
+           --instance-profile-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  #=================== EC2 / IAM Role ====================
+  - name: 04.3 -- Detach IAM EC2 Managed Policy, AmazonEC2FullAccess, in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ec2_role }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.4 -- Detach IAM EC2 Managed Policy, AmazonEC2ContainerServiceFullAccess, in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ec2_role2 }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.5 -- Detach IAM ECS Managed Policy, AmazonEC2ContainerRegistryFullAccess, in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}" \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ecs_role2 }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 04.6 -- Destroy IAM EC2 Role in {{ aws_env|upper }}
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-ec2role-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+    ignore_errors: yes
+
+  #=================== ECS/ Assume-Role Policy ====================
+  - name: 04.7 -- Detach IAM Assume-Role Policy in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --policy-arn arn:aws:iam::{{ aws_account_dev }}:policy/{{ aws_project }}-{{ aws_application }}-iam-assumerolepolicy-{{ aws_env_int }} \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}" \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}"
+
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 04.8 -- Destroy IAM Assume-Role Policy in {{ aws_env|upper }}
+    shell: aws iam delete-policy \
+           --policy-arn arn:aws:iam::{{ aws_account_dev }}:policy/{{ aws_project }}-{{ aws_application }}-iam-assumerolepolicy-{{ aws_env_int }} \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  #=================== ECS / IAM Task Role (POC ) ====================
+  - name: 04.9 -- Detach IAM ECS Managed Policy, AmazonEC2ContainerServiceforEC2Role, in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}" \
+           --policy-arn arn:aws:iam::aws:policy/service-role/"{{ aws_ecs_role }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - name: 04.10 -- Detach IAM ECR Managed Policy, AmazonEC2ContainerRegistryFullAccess, in {{ aws_env|upper }}
+    shell: aws iam detach-role-policy \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}" \
+           --policy-arn arn:aws:iam::aws:policy/"{{ aws_ecs_role2 }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 04.11 -- Destroy IAM ECS Managed Policy in {{ aws_env|upper }}
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}"
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      state: absent
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

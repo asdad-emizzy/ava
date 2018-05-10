@@ -1,0 +1,54 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+    # ---------- Create Cross-Accounts ----------
+  - name: 05.1 -- Create Cross-Accounts
+    iam:
+      iam_type: role
+      name: "{{ aws_project }}-{{ aws_application }}-iam-crossaccount-{{ aws_env }}"
+      profile: "{{ item }}"
+      region: "{{ aws_region }}"
+      state: present
+      trust_policy:
+        Version: '2012-10-17'
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            AWS: arn:aws:iam::{{ aws_account }}:root
+    with_items:
+      - "{{ aws_profile2 }}"
+      - "{{ aws_profile3 }}"
+      # - "{{ aws_profile4 }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
+
+  - name: 05.2 -- Attach EC2 IAM Policy, AmazonEC2FullAccess
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/AmazonEC2FullAccess \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-crossaccount-{{ aws_env }}" \
+           --profile "{{ item }}" \
+           --region "{{ aws_region }}"
+    with_items:
+      - "{{ aws_profile2 }}"
+      - "{{ aws_profile3 }}"
+    ignore_errors: yes
+
+  - name: 05.3 -- Attach EC2 IAM Policy, AmazonS3FullAccess
+    shell: aws iam attach-role-policy \
+           --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess \
+           --role-name "{{ aws_project }}-{{ aws_application }}-iam-crossaccount-{{ aws_env }}" \
+           --profile "{{ item }}" \
+           --region "{{ aws_region }}"
+    with_items:
+      - "{{ aws_profile2 }}"
+      - "{{ aws_profile3 }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15

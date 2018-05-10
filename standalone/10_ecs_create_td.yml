@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 10.1 -- Create ECS Task Definition in {{ aws_env|upper }}
+    ecs_taskdefinition:
+      containers:
+      - name: "{{ aws_project }}-{{ aws_application }}-ecs-container-{{ aws_env_int }}"
+        cpu: 0
+        essential: true
+        image: "{{ aws_ecs_master_image }}"
+        # memory: 0
+        memoryReservation: 512
+        mountPoints:
+        - containerPath: /var/jenkins_home
+          sourceVolume: jenkins-master
+        portMappings:
+        - containerPort: 8080
+          hostPort: 8080
+        - containerPort: 50000
+          hostPort: 50000
+      volumes:
+      - name: jenkins-master
+        host:
+          sourcePath: /var/jenkins/master
+      family: "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}"
+      state: present
+      profile: "{{ aws_profile }}"
+      region: "{{ aws_region }}"
+      # task_role_arn: "arn:aws:iam::{{ aws_account_dev }}:role/{{ aws_project }}-{{ aws_application }}-iam-taskrole-{{ aws_env_int }}"
+    register: ecs_td_details
+
+  - pause:
+      seconds: 15

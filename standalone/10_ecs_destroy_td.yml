@@ -1,0 +1,26 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+
+  - name: 10.1 -- Lookup ECS Task Definition in {{ aws_env|upper }}
+    shell: aws ecs list-task-definitions \
+           --family-prefix "{{ aws_project }}-{{ aws_application }}-ecs-td-{{ aws_env_int }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    register: td_details_cmd_out
+  - set_fact:
+      td_details: "{{ td_details_cmd_out.stdout|from_json() }}"
+  - debug: msg="{{ td_details.taskDefinitionArns[0] }}"
+    ignore_errors: yes
+
+  - name: 10 -- Destroy ECS Task Definition in {{ aws_env|upper }}
+    shell: aws ecs deregister-task-definition \
+           --task-definition "{{ td_details.taskDefinitionArns[0] }}" \
+           --profile "{{ aws_profile }}" \
+           --region "{{ aws_region }}"
+    ignore_errors: yes
+
+  - pause:
+      seconds: 15
