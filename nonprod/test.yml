@@ -1,0 +1,15 @@
+---
+#Testing of Ansible Code
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  #roles:
+  #  - test
+- name: Check current AMI
+  ec2_ami_facts:
+    region: "us-east-1"
+    describe_image_attributes: "yes"
+    filters:
+      name: "amzn-ami-hvm-2018*"
+      virtualization-type: "hvm"
+  register: ami_current

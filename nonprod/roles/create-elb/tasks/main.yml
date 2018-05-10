@@ -1,0 +1,59 @@
+---
+# tasks file for create-elb
+#Start Application LoadBalancer creation
+   #- name: Gather SecurityGroup facts
+   #  shell: aws --region us-east-1 ec2 describe-security-groups --filters Name=group-name,Values=pss-sqa-sal-sg  --query 'SecurityGroups[*].{GroupId:GroupId}'
+   #  register: sg_details_cmd_out
+   #- set_fact:
+   #    sg_details: "{{ sg_details_cmd_out.stdout|from_json() }}"
+   #- debug:
+   #    msg: "{{ sg_details_cmd_out }}" #.SecurityGroups[0].GroupId }}"
+   #- debug:
+   #    msg: "aws --region us-east-1 ec2 describe-security-groups --filters Name=group-name,Values=pss-sqa-sal-sg"
+   
+   - local_action:
+       module: elb_classic_lb
+       name: "pss-pf-{{ env }}-sal-elb"
+       scheme: internal
+       state: present
+       security_group_ids: sg-184b9c6e
+       connection_draining_timeout: 60
+       idle_timeout: 300
+       cross_az_load_balancing: "yes"
+       region: us-east-1
+       #zones:
+       #  - us-east-1a
+       #  - us-east-1b
+       #  - us-east-1c
+       subnets:
+         - subnet-77e3833f
+         - subnet-04f54028
+         - subnet-b82529dd
+       listeners:
+         - protocol: http
+           load_balancer_port: 80
+           instance_port: 8080
+       health_check:
+         ping_protocol: tcp
+         ping_port: 8080
+         response_timeout: 5
+         interval: 30
+         unhealthy_threshold: 2
+         healthy_threshold: 10
+       tags:
+        Name: "pss-pf-{{ env }}-sal-elb"
+        BUSINESS_UNIT: "PSS"
+        CLIENT: "MULTI_TENANT"
+        BUSINESS_REGION: "NORTHAMERICA"
+        ENVIRONMENT: "NONPROD"
+        PLATFORM: "PATHFINDER"
+        SERVICE: "SAL"
+        SCHEDULER:SLEEP: "ALTERNATIVE"
+        ASSIGNMENT_GROUP: "SAL DevOps"
+        KNOWLEDGE_ARTICLE: "KBxxxx"
+       wait: yes
+     delegate_to: localhost
+     register: elb_classic_lb
+ 
+   - name: "Debugging of ELB creation"
+     debug: msg={{ elb_classic_lb }}

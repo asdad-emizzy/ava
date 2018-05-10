@@ -1,0 +1,84 @@
+---
+# tasks file for create-ec2
+-
+  name: "Check current AMI"
+  ec2_ami_facts:
+    filters:
+      name: "amzn-ami-hvm-2018.*" 
+      virtualization-type: "hvm"
+    region: "us-east-1"
+    describe_image_attributes: "yes"
+  register: ami_current
+-
+ name: Getting the latest one
+ set_fact:
+   latest_ami: >
+     {{ ami_current.images | sort(attribute='creation_date') | last }}
+- debug:
+   msg: "{{ ami_current.images | sort(attribute='creation_date') | last }}"
+  register: latest
+-
+  name: using latest AMI
+  debug:
+    msg: "{{ latest.msg.image_id }}"
+  #register: latest_ami  
+- local_action:
+    module: ec2
+    region: "us-east-1"
+    image: "{{ latest.msg.image_id }}" #"ami-1853ac65" # AWS linux image
+    #instance_profile_name: pss-ava-prod-nexus
+    instance_type: t2.small
+    count: 1
+    vpc_subnet_id: "subnet-477f3e1e"
+    user_data: |
+        #!/bin/bash
+        yum update -y
+        yum install httpd -y
+        ADMINGROUPS="AVA"
+        ###### step 1: create a computer object in the HQDOMAIN domain for this instance so that the record starts propagation sooner.
+        curl -o /tmp/realm_join.sh -k -L -H "x-api-key: 52m1l3h3RX6ZGOuxY6Mty4wsnGCfLsy57IOZaeJQ" "https://tdbr32kpth.execute-api.us-east-1.amazonaws.com/prod/cg-linux-alt/realm-join?OS_ID=register"
+        source /tmp/realm_join.sh > /tmp/realm_join_step1.log 2>&1
+        ###### install necessary requirement for the server
+        wget https://s3-ap-northeast-1.amazonaws.com/pss-bonsai-sqa-apne1-bucket/coriolis/jdk-8u151-linux-x64.rpm
+        echo "Installating and seeting up as primary for Java 1.8 from Oracle"
+        /usr/sbin/alternatives --set java /usr/java/jdk1.8.0_151/jre/bin/java
+        /usr/sbin/alternatives --set javac /usr/java/jdk1.8.0_151/jre/bin/javac
+        ##### Downalaoding nexus repository
+        
+        ###### step 2: join the HQDOMAIN domain with the newly created computer object, add access restrictions to your AD groups/users, and install Amazon Inspector Agents 
+        curl -o /tmp/realm_join.sh -k -L -H "x-api-key: 52m1l3h3RX6ZGOuxY6Mty4wsnGCfLsy57IOZaeJQ" "https://tdbr32kpth.execute-api.us-east-1.amazonaws.com/prod/cg-linux-alt/realm-join?OS_ID=realm-join"
+        source /tmp/realm_join.sh > /tmp/realm_join_step2.log 2>&1
+        rm -f /tmp/realm_join.sh
+    volumes:
+      - device_name: /dev/xvda
+        volume_type: gp2
+        volume_size: 100
+        delete_on_termination: true
+    instance_tags:
+      BUSINESS_REGION: "NORTHAMERICA"
+      BUSINESS_UNIT: "PSS"
+      PLATFORM: "AVA"
+      CLIENT: "MULTI_TENANT"
+      SCHEDULER:SLEEP: "INACTIVE"
+      Name: "pss-ava-prod-nexus"
+    group_id: "sg-0d583d32893fc417f"
+    key_name: ava-eb
+    wait: yes
+    #group: tomcat
+  register: ec2
+#- name: Add new instance to host group
+#  add_host:
+#    hostname: "{{ item.private_ip }}"
+#    groupname: apache
+#  with_items: "{{ ec2 }}"
+#- name: Wait for Proxy Instances to come up
+#  wait_for:
+#    host: "{{ item.private_ip }}"
+#    port: 22
+#    delay: 60
+#    timeout: 320
+#    state: started
+#  with_items: "{{ ec2.instances }}"
+- name: Gathering ReverseProxy on new provisioned environment.
+  debug: msg {{ ec2 }}
+

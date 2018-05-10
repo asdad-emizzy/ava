@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    #- create-ec2 tested
+    #- test
+    - create-elb #tested
+    - create-lc  #tested
+    - create-asg 

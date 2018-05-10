@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  #roles:
+  - task:
+    - local_action:
+        module: ec2_elb_lb
+        name: "pss-pf-{{ env }}-sal-lb-{{ env-version }}"
+        state: absent

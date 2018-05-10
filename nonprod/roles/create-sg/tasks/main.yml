@@ -1,0 +1,30 @@
+---
+# tasks file for create-sg
+
+- name: pss-ava for proxy ec2 group
+  ec2_group:
+    name: example
+    description: pss-ava-proxy EC2 group
+    vpc_id: vpc-23332546
+    region: us-east-1
+    rules:
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 10.0.0.0/8, 172.0.0.0/12
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 10.0.0.0/8, 172.0.0.0/12
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 10.0.0.0/8, 172.0.0.0/12
+      - proto: tcp
+        from_port: 8443
+        to_port: 8443
+        cidr_ip: 172.16.0.0/12, 10.0.0.0/8
+      - proto: icmp
+        from_port: 8
+        to_port:  -1
+        cidr_ip: 10.0.0.0/8

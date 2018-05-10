@@ -1,0 +1,7 @@
+---
+#Testing of Ansible Code
+- hosts: localhost
+  connection: local
+  gather_facts: true
+  roles:
+    - test

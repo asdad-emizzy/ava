@@ -1,0 +1,39 @@
+---
+-
+  connection: local
+  gather_facts: false
+  hosts: localhost
+  tasks:
+    -
+      ec2:
+        region: us-east-1
+        key_name: ava-eb
+        group: devops-sg
+        instance_type: t2.micro
+        user_data: |
+            #!/bin/bash
+            ADMINGROUPS="AVA"
+            #### step 1: create a computer object in the HQDOMAIN domain for this instance so that the record starts propagation sooner.
+            curl -o /tmp/realm_join.sh -k -L -H "x-api-key: 52m1l3h3RX6ZGOuxY6Mty4wsnGCfLsy57IOZaeJQ" "https://tdbr32kpth.execute-api.us-east-1.amazonaws.com/prod/cg-linux-alt/realm-join?OS_ID=register"
+            source /tmp/realm_join.sh > /tmp/realm_join_step1.log 2>&1
+            #### step 2: join the HQDOMAIN domain with the newly created computer object and adds access restriction to your AD groups/users
+            curl -o /tmp/realm_join.sh -k -L -H "x-api-key: 52m1l3h3RX6ZGOuxY6Mty4wsnGCfLsy57IOZaeJQ" "https://tdbr32kpth.execute-api.us-east-1.amazonaws.com/prod/cg-linux-alt/realm-join?OS_ID=realm-join"
+            source /tmp/realm_join.sh > /tmp/real_join_step2.log 2>&1
+            rm -f /tmp/realm_join.sh
+        image: ami-1853ac65
+        wait: yes
+        wait_timeout: 500
+        volumes:
+        - device_name: /dev/xvda
+          volume_type: gp2
+          volume_size: 8
+        vpc_subnet_id: subnet-381bd812
+        assign_public_ip: no
+        instance_tags:
+          BUSINESS_REGION: NORTHAMERICA
+          BUSINESS_UNIT: PSS
+          CLIENT: NONE
+          ENVIRONMENT: POC
+          Name: pss-ava-poc-AD-Authentication
+          PLATFORM: AVA
+          SCHEDULER:SLEEP: INACTIVE

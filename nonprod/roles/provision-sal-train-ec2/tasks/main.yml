@@ -1,0 +1,29 @@
+---
+# tasks file for provision-sal-train-ec2
+- local_action:
+    module: ec2
+    region: "us-east-1"
+    image: "ami-f98d7c84" # nonprod image
+    instance_type: t2.medium
+    count: 1
+    vpc_subnet_id: "subnet-b82529dd"
+    user_data: |
+        #!/bin/bash
+        cat /home/ec2-user/env_setting
+    volumes:
+      - device_name: /dev/xvda
+        volume_type: gp2
+        volume_size: 60
+        delete_on_termination: true
+    instance_tags:
+      BUSINESS_REGION: "NORTHAMERICA"
+      BUSINESS_UNIT: "PSS"
+      PLATFORM: "PATHFINDER"
+      CLIENT: "MULTI_TENANT"
+      ENVIRONMENT: "SQA"
+      SCHEDULER:SLEEP: "INACTIVE"
+      Name: "pss-pf-training-sal"
+    group_id: "sg-f0c26b87"
+    key_name: sal-nonprod
+    wait: yes
+

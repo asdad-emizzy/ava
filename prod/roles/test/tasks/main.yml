@@ -1,0 +1,22 @@
+---
+-
+  name: "Check current AMI"
+  ec2_ami_facts:
+    filters:
+      name: "amzn-ami-hvm-2018.*" #"amzn-ami-*.*.a-amazon-ecs-optimized"#
+      virtualization-type: "hvm"
+    region: "us-east-1"
+    describe_image_attributes: "yes"
+  register: ami_current
+- 
+ name: now get the latest one
+ set_fact:
+   latest_ami: >
+     {{ ami_current.images | sort(attribute='creation_date') | last }}
+- debug:
+   msg: "{{ ami_current.images | sort(attribute='creation_date') | last }}"
+  register: latest
+- 
+  name: using latest AMI
+  debug:
+    msg: "{{ latest.msg.image_id }}"

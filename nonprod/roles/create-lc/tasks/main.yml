@@ -1,0 +1,22 @@
+---
+# tasks file for create-lc
+- ec2_lc:
+    name: pss-pf-{{ env }}-sal-launchconfiguration
+    image_id: ami-bb58a9c6
+    key_name: sal-nonprod
+    region: us-east-1
+    security_groups: sg-184b9c6e
+    instance_type: t2.small
+    instance_profile_name: pss-pf-qa-sal-ec2
+    user_data: |
+        #!/bin/bash
+        cat /home/ec2-user/env_setting/{{ env }}_env_setting >> /home/ec2-user/.bashrc
+    volumes:
+    - device_name: /dev/xvda
+      volume_size: 60
+      device_type: gp2
+      delete_on_termination: true
+  register: ec2_lc
+
+- name: Debugging ec2_lc information
+  debug: msg={{ ec2_lc }}

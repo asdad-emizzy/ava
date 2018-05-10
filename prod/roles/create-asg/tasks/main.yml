@@ -1,0 +1,32 @@
+---
+# tasks file for create-asg
+- action:
+    module: ec2_elb_facts
+    region: us-east-1
+    names: pss-pf-{{ env }}-sal-elb
+  register: elb_facts
+
+- action:
+    module: debug
+    msg: "{{ elb_facts.elbs[0].name }}"
+  #with_items: "{{ elb_facts.elbs.0.scheme }}"
+
+
+- ec2_asg:
+    name: pss-pf-{{ env }}-sal-asg
+    region: us-east-1
+    load_balancers: "{{ elb_facts.elbs[0].name }}"
+    availability_zones: [ 'us-east-1a', 'us-east-1b', 'us-east-1c' ]
+    launch_config_name: 'pss-pf-{{ env }}-sal-launchconfiguration'
+    lc_check: true
+    min_size: 1
+    max_size: 5
+    desired_capacity: 1
+    vpc_zone_identifier: [ 'subnet-77e3833f', 'subnet-04f54028', 'subnet-b82529dd' ]
+    tags:
+     -  Name: "pss-pf-{{ env }}-sal-asg"
+     -  BUSINESS_UNIT: "PSS"
+     -  CLIENT: "MULTI_TENANT"
+     -  BUSINESS_REGION: "NORTHAMERICA"
+     -  ENVIRONMENT: "NONPROD"
+     -  PLATFORM: "PATHFINDER"

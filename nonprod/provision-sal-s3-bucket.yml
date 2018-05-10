@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  tasks:
+  - s3_bucket:
+      name: sonash-sal-buildfiles
+      versioning: yes
+      tags:
+        Name: "sonash-sal-buildfiles"
+        BUSINESS_UNIT: "PSS"
+        CLIENT: "MULTI_TENANT"
+        BUSINESS_REGION: "NORTHAMERICA"
+        ENVIRONMENT: "NONPROD"
+        PLATFORM: "PATHFINDER"
+    register: s3_bucket 
+  - name: Gathering S3 bucket information of sonash-sal-buildfiles
+    debug:
+      msg: "{{ s3_bucket }}"

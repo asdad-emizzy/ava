@@ -1,0 +1,5 @@
+---
+# vars file for create-elb
+  pf_env:                 null
+  pf_env_version:         null
+  pf_sal_elb:             "sal-lb"
